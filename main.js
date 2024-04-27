@@ -8,8 +8,15 @@ function getBody() {
   const { packages } = JSON.parse(readFileSync(lockfile, 'utf8'));
   return Object.entries(packages).slice(1).map(([key, value]) => {
     if (value.resolved.startsWith('git')) {
-      const { repo, hash } = matcher.exec(value.resolved).groups;
-      return `- [${repo}@\`${hash}\`](https://github.com/${repo}/commit/${hash})`;
+      const match = matcher.exec(value.resolved)
+      if (match) {
+        const { repo, hash } = match.groups;
+        return `- [${repo}@\`${hash}\`](https://github.com/${repo}/commit/${hash})`;
+      } else {
+        console.log(`::warning file=${lockfile},title="Regex failure"::Could not parse ${value.resolved}.
+Consider reporting this to https://github.com/tree-sitter/parser-update-action/`)
+        return `- \`${value.resolved}\``;
+      }
     }
     const name = key.substring(13), version = value.version;
     return `- [${name}@\`${version}\`](https://www.npmjs.com/package/${name}/v/${version})`;
